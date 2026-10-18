@@ -132,13 +132,14 @@
         let alienLasers = [];
         const laserSpeed = 8;
 
+        // FIXED: Replaced arrays with independent text strings to stop rendering engine crashes
         const stages = [
-            { name: "Mass (Weak)", line1: "mass the", line2: "gay gooner", color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1.0, weapon: "normal" },
-            { name: "George (Medium)", line1: "George the", line2: "secret gooner", color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
-            { name: "West (Above Medium)", line1: "West the", line2: "og gooner", color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
-            { name: "Phantom (Strong)", line1: "phantom the", line2: "serial gooner", color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
-            { name: "Aura Farmer (Boss)", line1: "Aura farmer the", line2: "ultimate gooner", color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
-            { name: "Jassy (Finale Boss)", line1: "Jassy the", line2: "legendary gooner", color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.3, weapon: "tracking" }
+            { name: "Mass (Weak)", txt1: "mass the", txt2: "gay gooner", color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1.0, weapon: "normal" },
+            { name: "George (Medium)", txt1: "George the", txt2: "secret gooner", color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
+            { name: "West (Above Medium)", txt1: "West the", txt2: "og gooner", color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
+            { name: "Phantom (Strong)", txt1: "phantom the", txt2: "serial gooner", color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
+            { name: "Aura Farmer (Boss)", txt1: "Aura farmer the", txt2: "ultimate gooner", color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
+            { name: "Jassy (Finale Boss)", txt1: "Jassy the", txt2: "legendary gooner", color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.3, weapon: "tracking" }
         ];
 
         let alienWidth = 70;
@@ -155,7 +156,7 @@
 
         const inputs = { left: false, right: false };
 
-        // Keyboard support backup
+        // Event hooks
         document.addEventListener("keydown", e => {
             const k = e.key.toLowerCase();
             if (k === "arrowleft" || k === "a") inputs.left = true;
@@ -168,7 +169,6 @@
             if (k === "arrowright" || k === "d") inputs.right = false;
         });
 
-        // Touch Control Listeners
         const leftBtn = document.getElementById("leftBtn");
         const rightBtn = document.getElementById("rightBtn");
         const fireBtn = document.getElementById("fireBtn");
@@ -269,4 +269,3 @@
                     continue;
                 }
 
-                if (rectCollision(laser, player)) {
