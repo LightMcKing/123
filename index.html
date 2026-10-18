@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Invaders - Gooner Boss Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Space Invaders - Gooner Mobile Edition</title>
     <style>
         body {
             background-color: #050505;
@@ -12,40 +12,80 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            touch-action: none; /* Prevents mobile browser zooming or panning while playing */
+            -webkit-user-select: none;
+            user-select: none;
         }
         h1 {
-            margin: 0 0 5px 0;
+            margin: 10px 0 5px 0;
             text-shadow: 0 0 8px #ff00ff;
-            letter-spacing: 2px;
-            font-size: 24px;
+            letter-spacing: 1px;
+            font-size: 18px;
             text-align: center;
         }
         #ui-bar {
-            width: 90vw;
-            max-width: 700px;
+            width: 95vw;
             display: flex;
             justify-content: space-between;
-            font-size: 16px;
-            margin-bottom: 10px;
+            font-size: 14px;
+            margin-bottom: 5px;
             color: #00ffff;
         }
         canvas {
             background-color: #000;
-            border: 3px solid #444;
-            box-shadow: 0 0 25px rgba(255, 0, 255, 0.15);
+            border: 2px solid #444;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.15);
             max-width: 95vw;
-            max-height: 70vh;
+            max-height: 55vh;
+            display: block;
         }
-        .controls {
-            margin-top: 10px;
-            font-size: 12px;
-            color: #777;
-            text-align: center;
-            line-height: 1.5;
+        /* Mobile Touch Controls Layout */
+        #controls-container {
+            width: 95vw;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            margin-bottom: 20px;
+        }
+        .d-pad {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid #fff;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .btn:active {
+            background: rgba(255, 0, 255, 0.4);
+            border-color: #ff00ff;
+        }
+        .move-btn {
+            width: 65px;
+            height: 65px;
+        }
+        .fire-btn {
+            width: 120px;
+            height: 65px;
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+            font-size: 18px;
+        }
+        .fire-btn:active {
+            background: rgba(0, 255, 255, 0.5);
         }
     </style>
 </head>
@@ -57,8 +97,17 @@
         <div>STAGE: <span id="stage-name">Loading...</span></div>
         <div>LIVES: <span id="lives">3</span></div>
     </div>
+    
     <canvas id="gameCanvas" width="750" height="550"></canvas>
-    <div class="controls">Use Arrow Keys / A & D to Move Left & Right<br>Press SPACEBAR to Shoot from Center & Right Guns!</div>
+
+    <!-- Virtual Controls for Mobile Devices -->
+    <div id="controls-container">
+        <div class="d-pad">
+            <div class="btn move-btn" id="leftBtn">◀</div>
+            <div class="btn move-btn" id="rightBtn">▶</div>
+        </div>
+        <div class="btn fire-btn" id="fireBtn">FIRE</div>
+    </div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -80,14 +129,14 @@
             y: canvas.height - 40,
             width: 50,
             height: 18,
-            speed: 6,
+            speed: 7,
             color: "#00ff00"
         };
 
         // Projectiles
         let playerLasers = [];
         let alienLasers = [];
-        const laserSpeed = 7;
+        const laserSpeed = 8;
 
         // Stage Configuration mapping names and settings
         const stages = [
@@ -111,23 +160,48 @@
         const alienDropDistance = 15;
         let alienShootChance = 0.02; 
 
-        // Inputs
-        const keys = {};
-        document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-        document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+        // Input tracking states (Combines Keyboards + Touch Controls)
+        const inputs = { left: false, right: false };
 
-        // Double laser capability (Center + Right Wing gun)
-        let canShoot = true;
+        // Desktop Keyboard Listeners
         document.addEventListener("keydown", e => {
-            if (e.key === " " && canShoot && !gameOver && !victory) {
-                playerLasers.push({ x: player.x + player.width / 2 - 2, y: player.y, vx: 0, width: 4, height: 12 });
-                playerLasers.push({ x: player.x + player.width - 6, y: player.y, vx: 0, width: 4, height: 12 });
-                canShoot = false;
-            }
+            const k = e.key.toLowerCase();
+            if (k === "arrowleft" || k === "a") inputs.left = true;
+            if (k === "arrowright" || k === "d") inputs.right = true;
+            if (k === " ") executeFire();
         });
         document.addEventListener("keyup", e => {
-            if (e.key === " ") canShoot = true;
+            const k = e.key.toLowerCase();
+            if (k === "arrowleft" || k === "a") inputs.left = false;
+            if (k === "arrowright" || k === "d") inputs.right = false;
         });
+
+        // Mobile On-Screen Button Listeners
+        const leftBtn = document.getElementById("leftBtn");
+        const rightBtn = document.getElementById("rightBtn");
+        const fireBtn = document.getElementById("fireBtn");
+
+        leftBtn.addEventListener("touchstart", (e) => { e.preventDefault(); inputs.left = true; });
+        leftBtn.addEventListener("touchend", (e) => { e.preventDefault(); inputs.left = false; });
+        rightBtn.addEventListener("touchstart", (e) => { e.preventDefault(); inputs.right = true; });
+        rightBtn.addEventListener("touchend", (e) => { e.preventDefault(); inputs.right = false; });
+        
+        fireBtn.addEventListener("touchstart", (e) => { 
+            e.preventDefault(); 
+            executeFire(); 
+        });
+
+        function executeFire() {
+            if (!gameOver && !victory) {
+                // Main center laser
+                playerLasers.push({ x: player.x + player.width / 2 - 2, y: player.y, vx: 0, width: 4, height: 12 });
+                // Right wing laser
+                playerLasers.push({ x: player.x + player.width - 6, y: player.y, vx: 0, width: 4, height: 12 });
+            } else if (gameOver || victory) {
+                // Tap fire button to reset game if finished
+                resetGame();
+            }
+        }
 
         function initStage(index) {
             if (index >= stages.length) {
@@ -171,6 +245,16 @@
             }
         }
 
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            gameOver = false;
+            victory = false;
+            scoreElement.innerText = score;
+            livesElement.innerText = lives;
+            initStage(0);
+        }
+
         function rectCollision(rect1, rect2) {
             return rect1.x < rect2.x + rect2.width &&
                    rect1.x + rect1.width > rect2.x &&
@@ -181,77 +265,12 @@
         function update() {
             if (gameOver || victory) return;
 
-            // Player Movement Left & Right
-            if ((keys["arrowleft"] || keys["a"]) && player.x > 0) {
+            // Player Ship Movement Physics
+            if (inputs.left && player.x > 0) {
                 player.x -= player.speed;
             }
-            if ((keys["arrowright"] || keys["d"]) && player.x < canvas.width - player.width) {
+            if (inputs.right && player.x < canvas.width - player.width) {
                 player.x += player.speed;
             }
 
             // Move Player Lasers
-            for (let i = playerLasers.length - 1; i >= 0; i--) {
-                playerLasers[i].y -= laserSpeed;
-                if (playerLasers[i].y < 0) {
-                    playerLasers.splice(i, 1);
-                }
-            }
-
-            // Move Alien Lasers
-            for (let i = alienLasers.length - 1; i >= 0; i--) {
-                let laser = alienLasers[i];
-                laser.y += laserSpeed * 0.6;
-                if (laser.vx) {
-                    laser.x += laser.vx; // FIXED: Changed laservx to laser.vx
-                }
-                
-                if (laser.y > canvas.height || laser.x < 0 || laser.x > canvas.width) {
-                    alienLasers.splice(i, 1);
-                    continue;
-                }
-
-                if (rectCollision(laser, player)) {
-                    alienLasers.splice(i, 1);
-                    lives--;
-                    livesElement.innerText = lives;
-                    if (lives <= 0) gameOver = true;
-                }
-            }
-
-            // Alien Grid Calculations
-            let shiftDown = false;
-            let totalAliensAlive = 0;
-            const currentStage = stages[currentStageIndex];
-
-            aliens.forEach(row => {
-                row.forEach(alien => {
-                    if (!alien.alive) return;
-                    totalAliensAlive++;
-
-                    alien.x += currentAlienSpeed * alienDirection;
-
-                    if (alien.x + alienWidth > canvas.width - 10 || alien.x < 10) {
-                        shiftDown = true;
-                    }
-
-                    if (alien.y + alienHeight >= player.y) {
-                        gameOver = true;
-                    }
-
-                    // Alien Firing Logic
-                    if (Math.random() < alienShootChance / totalAliensAlive) {
-                        const centerX = alien.x + alienWidth / 2;
-                        const bottomY = alien.y + alienHeight;
-
-                        if (currentStage.weapon === "spread") {
-                            alienLasers.push({ x: centerX, y: bottomY, vx: -2, width: 6, height: 12 });
-                            alienLasers.push({ x: centerX, y: bottomY, vx: 0, width: 6, height: 12 });
-                            alienLasers.push({ x: centerX, y: bottomY, vx: 2, width: 6, height: 12 });
-                        } else if (currentStage.weapon === "tracking") {
-                            const targetDX = (player.x + player.width / 2) - centerX;
-                            const targetDY = player.y - bottomY;
-                            const distance = Math.sqrt(targetDX * targetDX + targetDY * targetDY);
-                            const speedMod = 4; 
-                            const calculatedVX = (targetDX / distance) * speedMod;
-
-                            alienLasers.push({ x: centerX, y: bottomY, vx: calculatedVX, width: 8, height: 16 });
