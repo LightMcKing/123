@@ -131,13 +131,14 @@
         let alienLasers = [];
         const laserSpeed = 8;
 
+        // Custom array splitting structure for clean cube rendering boundaries
         const stages = [
-            { name: "Mass (Weak)", alienName: "mass the gay gooner", color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1.0, weapon: "normal" },
-            { name: "George (Medium)", alienName: "George the secret gooner", color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
-            { name: "West (Above Medium)", alienName: "West the og gooner", color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
-            { name: "Phantom (Strong)", alienName: "phantom the serial gooner", color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
-            { name: "Aura Farmer (Boss)", alienName: "Aura farmer the ultimate gooner", color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
-            { name: "Jassy (Finale Boss)", alienName: "Jassy the legendary gooner", color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.3, weapon: "tracking" }
+            { name: "Mass (Weak)", alienWords: ["mass the", "gay gooner"], color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1.0, weapon: "normal" },
+            { name: "George (Medium)", alienWords: ["George the", "secret gooner"], color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
+            { name: "West (Above Medium)", alienWords: ["West the", "og gooner"], color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
+            { name: "Phantom (Strong)", alienWords: ["phantom the", "serial gooner"], color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
+            { name: "Aura Farmer (Boss)", alienWords: ["Aura farmer the", "ultimate gooner"], color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
+            { name: "Jassy (Finale Boss)", alienWords: ["Jassy the", "legendary gooner"], color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.3, weapon: "tracking" }
         ];
 
         let alienWidth = 70;
@@ -178,8 +179,8 @@
 
         function executeFire() {
             if (!gameOver && !victory) {
-                playerLasers.push({ x: player.x + player.width / 2 - 2, y: player.y, vx: 0, width: 4, height: 12 });
-                playerLasers.push({ x: player.x + player.width - 6, y: player.y, vx: 0, width: 4, height: 12 });
+                playerLasers.push({ x: player.x + 4, y: player.y, vx: 0, width: 4, height: 12 });
+                playerLasers.push({ x: player.x + player.width - 8, y: player.y, vx: 0, width: 4, height: 12 });
             } else {
                 resetGame();
             }
@@ -199,15 +200,15 @@
             alienLasers = [];
 
             if (currentStage.weapon === "tracking") {
-                alienWidth = 180;
+                alienWidth = 240;
                 alienHeight = 70;
-                alienOffsetLeft = canvas.width / 2 - 90;
+                alienOffsetLeft = canvas.width / 2 - 120;
             } else if (currentStage.weapon === "spread") {
-                alienWidth = 120;
+                alienWidth = 140;
                 alienHeight = 55;
                 alienOffsetLeft = 60;
             } else {
-                alienWidth = 70;
+                alienWidth = 72;
                 alienHeight = 45;
                 alienOffsetLeft = 40;
             }
@@ -259,7 +260,9 @@
             for (let i = alienLasers.length - 1; i >= 0; i--) {
                 let laser = alienLasers[i];
                 laser.y += laserSpeed * 0.6;
-                if (laser.vx) laser.x += laser.vx;
+                if (laser.vx) {
+                    laser.x += laser.vx; // FIXED: Safely references object scoped vx property 
+                }
                 
                 if (laser.y > canvas.height || laser.x < 0 || laser.x > canvas.width) {
                     alienLasers.splice(i, 1);
@@ -268,9 +271,3 @@
 
                 if (rectCollision(laser, player)) {
                     alienLasers.splice(i, 1);
-                    lives--;
-                    livesElement.innerText = lives;
-                    if (lives <= 0) gameOver = true;
-                }
-            }
-
