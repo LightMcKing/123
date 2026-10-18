@@ -2,216 +2,252 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Dodger Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Invaders - Gooner Boss Edition</title>
     <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-        }
         body {
-            margin: 0;
-            padding: 0;
-            background-color: #0b0b1e;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #050505;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
+            margin: 0;
             overflow: hidden;
         }
         h1 {
-            margin: 10px 0 5px 0;
-            font-size: 22px;
+            margin: 0 0 5px 0;
+            text-shadow: 0 0 8px #ff00ff;
             letter-spacing: 2px;
-            text-shadow: 0 0 10px #00ffcc;
+            font-size: 28px;
         }
-        #gameCanvas {
-            border: 3px solid #00ffcc;
-            background-color: #050510;
-            box-shadow: 0 0 15px #00ffcc;
-            max-width: 95vw;
-            max-height: 70vh;
-            border-radius: 8px;
+        #ui-bar {
+            width: 700px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #00ffff;
         }
-        .instructions {
-            margin: 15px 0;
+        canvas {
+            background-color: #000;
+            border: 3px solid #444;
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.15);
+        }
+        .controls {
+            margin-top: 10px;
             font-size: 13px;
-            color: #88aaee;
+            color: #777;
             text-align: center;
-            max-width: 80%;
-            line-height: 1.4;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
 
-    <h1>SPACE DODGER</h1>
-    <canvas id="gameCanvas" width="360" height="500"></canvas>
-    <div class="instructions">Drag anywhere on screen to move the ship.<br>Tap when defeated to try again.</div>
+    <h1>SPACE INVADERS: THE GOONER EDITION</h1>
+    <div id="ui-bar">
+        <div>SCORE: <span id="score">0</span></div>
+        <div>STAGE: <span id="stage-name">Loading...</span></div>
+        <div>LIVES: <span id="lives">3</span></div>
+    </div>
+    <canvas id="gameCanvas" width="750" height="550"></canvas>
+    <div class="controls">Use Arrow Keys / A & D to Move Left & Right<br>Press SPACEBAR to Shoot from Center & Right Guns!</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+        const livesElement = document.getElementById("lives");
+        const stageNameElement = document.getElementById("stage-name");
 
-        // Engine adjustments
-        let gameOver = false;
+        // Game State
         let score = 0;
-        let speedMultiplier = 1;
+        let lives = 3;
+        let gameOver = false;
+        let victory = false;
+        let currentStageIndex = 0;
 
-        // Space Fighter Entity
+        // Player Ship Configuration
         const player = {
-            x: canvas.width / 2 - 15,
-            y: canvas.height - 65,
-            width: 30,
-            height: 30,
-            color: "#00ffcc"
+            x: canvas.width / 2 - 25,
+            y: canvas.height - 40,
+            width: 50,
+            height: 18,
+            speed: 6,
+            color: "#00ff00"
         };
 
-        // Hazard Array
-        const obstacles = [];
-        const obstacleSpawnRate = 35; 
-        let spawnTimer = 0;
+        // Projectiles
+        let playerLasers = [];
+        let alienLasers = [];
+        const laserSpeed = 7;
 
-        // --- IPHONE TOUCH CONTROLS ---
-        function handleTouch(e) {
-            e.preventDefault(); 
-            if (gameOver) return;
+        // Stage Configuration mapping names and settings
+        const stages = [
+            { name: "Mass (Weak)", alienName: "mass the gay gooner", color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1, weapon: "normal" },
+            { name: "George (Medium)", alienName: "George the secret gooner", color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
+            { name: "West (Above Medium)", alienName: "West the og gooner", color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
+            { name: "Phantom (Strong)", alienName: "phantom the serial gooner", color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
+            { name: "Aura Farmer (Boss)", alienName: "Aura farmer the ultimate gooner", color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
+            { name: "Jassy (Finale Boss)", alienName: "Jassy the legendary gooner", color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.5, weapon: "tracking" }
+        ];
 
-            const rect = canvas.getBoundingClientRect();
-            // Track the primary active finger touch position
-            const touch = e.touches[0];
-            
-            // Map the screen coordinates dynamically to canvas dimensions
-            const touchX = ((touch.clientX - rect.left) / rect.width) * canvas.width;
-            
-            // Slide player directly under finger tracking boundary
-            player.x = touchX - player.width / 2;
+        let alienWidth = 70;
+        let alienHeight = 45;
+        const alienPadding = 15;
+        let alienOffsetTop = 50;
+        let alienOffsetLeft = 40;
 
-            // Restrict from flying off-canvas margins
-            if (player.x < 0) player.x = 0;
-            if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
-        }
+        let aliens = [];
+        let alienDirection = 1;
+        let currentAlienSpeed = 1;
+        const alienDropDistance = 15;
+        let alienShootChance = 0.02; // Elevated baseline shoot chance
 
-        canvas.addEventListener("touchstart", (e) => {
-            if (gameOver) {
-                resetGame();
-            } else {
-                handleTouch(e);
+        // Inputs
+        const keys = {};
+        document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+        document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+        // Double laser capability (Center + Right Wing gun)
+        let canShoot = true;
+        document.addEventListener("keydown", e => {
+            if (e.key === " " && canShoot && !gameOver && !victory) {
+                // Main center laser
+                playerLasers.push({ x: player.x + player.width / 2 - 2, y: player.y, vx: 0, width: 4, height: 12 });
+                // Right side laser
+                playerLasers.push({ x: player.x + player.width - 6, y: player.y, vx: 0, width: 4, height: 12 });
+                canShoot = false;
             }
-        }, { passive: false });
-
-        canvas.addEventListener("touchmove", handleTouch, { passive: false });
-        
-        // Desktop backup click for testing
-        canvas.addEventListener("click", () => {
-            if (gameOver) resetGame();
+        });
+        document.addEventListener("keyup", e => {
+            if (e.key === " ") canShoot = true;
         });
 
-        function resetGame() {
-            obstacles.length = 0;
-            score = 0;
-            speedMultiplier = 1;
-            player.x = canvas.width / 2 - 15;
-            gameOver = false;
-            animate();
+        function initStage(index) {
+            if (index >= stages.length) {
+                victory = true;
+                return;
+            }
+            currentStageIndex = index;
+            const currentStage = stages[currentStageIndex];
+            stageNameElement.innerText = currentStage.name;
+            currentAlienSpeed = currentStage.speed;
+            alienDirection = 1;
+            playerLasers = [];
+            alienLasers = [];
+
+            // Scale Boss sizing for single-entity epic matches
+            if (currentStage.weapon === "tracking") {
+                alienWidth = 180;
+                alienHeight = 70;
+                alienOffsetLeft = canvas.width / 2 - 90;
+            } else if (currentStage.weapon === "spread") {
+                alienWidth = 120;
+                alienHeight = 55;
+                alienOffsetLeft = 60;
+            } else {
+                alienWidth = 70;
+                alienHeight = 45;
+                alienOffsetLeft = 40;
+            }
+
+            aliens = [];
+            for (let r = 0; r < currentStage.rows; r++) {
+                aliens[r] = [];
+                for (let c = 0; c < currentStage.cols; c++) {
+                    aliens[r][c] = {
+                        x: (c * (alienWidth + alienPadding)) + alienOffsetLeft,
+                        y: (r * (alienHeight + alienPadding)) + alienOffsetTop,
+                        maxHp: currentStage.hp,
+                        hp: currentStage.hp,
+                        alive: true
+                    };
+                }
+            }
         }
 
-        function spawnObstacle() {
-            const size = Math.random() * 20 + 15; 
-            obstacles.push({
-                x: Math.random() * (canvas.width - size),
-                y: -size,
-                width: size,
-                height: size,
-                speed: (Math.random() * 2.5 + 2.5) * speedMultiplier,
-                color: "#ff3366"
-            });
-        }
-
-        function checkCollision(rect1, rect2) {
+        function rectCollision(rect1, rect2) {
             return rect1.x < rect2.x + rect2.width &&
                    rect1.x + rect1.width > rect2.x &&
                    rect1.y < rect2.y + rect2.height &&
                    rect1.y + rect1.height > rect2.y;
         }
 
-        // Processing Pipeline Loop
-        function animate() {
-            if (gameOver) {
-                ctx.fillStyle = "rgba(5, 5, 20, 0.85)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = "#ff3366";
-                ctx.font = "bold 28px sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 20);
-                
-                ctx.fillStyle = "white";
-                ctx.font = "16px sans-serif";
-                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
-                
-                ctx.fillStyle = "#00ffcc";
-                ctx.font = "14px sans-serif";
-                ctx.fillText("TAP TO RESTART", canvas.width / 2, canvas.height / 2 + 60);
-                return; 
+        function update() {
+            if (gameOver || victory) return;
+
+            // Player Movement Left & Right
+            if ((keys["arrowleft"] || keys["a"]) && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if ((keys["arrowright"] || keys["d"]) && player.x < canvas.width - player.width) {
+                player.x += player.speed;
             }
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Move Player Lasers
+            playerLasers.forEach((laser, index) => {
+                laser.y -= laserSpeed;
+                if (laser.y < 0) playerLasers.splice(index, 1);
+            });
 
-            // Render Player Fighter Ship
-            ctx.fillStyle = player.color;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = player.color;
-            ctx.beginPath();
-            ctx.moveTo(player.x + player.width / 2, player.y);
-            ctx.lineTo(player.x, player.y + player.height);
-            ctx.lineTo(player.x + player.width, player.y + player.height);
-            ctx.closePath();
-            ctx.fill();
-            ctx.shadowBlur = 0; // Reset canvas effects container for performance
-
-            // Asteroid Logic Generation
-            spawnTimer++;
-            if (spawnTimer >= obstacleSpawnRate) {
-                spawnObstacle();
-                spawnTimer = 0;
-            }
-
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-                let obs = obstacles[i];
-                obs.y += obs.speed;
-
-                ctx.fillStyle = obs.color;
-                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-
-                if (checkCollision(player, obs)) {
-                    gameOver = true;
+            // Move Alien Lasers
+            alienLasers.forEach((laser, index) => {
+                laser.y += laserSpeed * 0.6;
+                if (laser.vx) {
+                    laser.x += laservx;
+                }
+                if (laser.y > canvas.height || laser.x < 0 || laser.x > canvas.width) {
+                    alienLasers.splice(index, 1);
+                    return;
                 }
 
-                if (obs.y > canvas.height) {
-                    obstacles.splice(i, 1);
-                    score++;
-                    if (score % 8 === 0) {
-                        speedMultiplier += 0.12; // Difficulty increases cleanly
+                if (rectCollision(laser, player)) {
+                    alienLasers.splice(index, 1);
+                    lives--;
+                    livesElement.innerText = lives;
+                    if (lives <= 0) gameOver = true;
+                }
+            });
+
+            // Alien Grid Calculations
+            let shiftDown = false;
+            let totalAliensAlive = 0;
+            const currentStage = stages[currentStageIndex];
+
+            aliens.forEach(row => {
+                row.forEach(alien => {
+                    if (!alien.alive) return;
+                    totalAliensAlive++;
+
+                    alien.x += currentAlienSpeed * alienDirection;
+
+                    if (alien.x + alienWidth > canvas.width - 10 || alien.x < 10) {
+                        shiftDown = true;
                     }
-                }
-            }
 
-            // Score Counter Presentation
-            ctx.fillStyle = "white";
-            ctx.font = "bold 16px sans-serif";
-            ctx.textAlign = "left";
-            ctx.fillText(`SCORE: ${score}`, 20, 35);
+                    if (alien.y + alienHeight >= player.y) {
+                        gameOver = true;
+                    }
 
-            requestAnimationFrame(animate);
-        }
+                    // Dynamic Alien Shooters Selection
+                    if (Math.random() < alienShootChance / totalAliensAlive) {
+                        const centerX = alien.x + alienWidth / 2;
+                        const bottomY = alien.y + alienHeight;
 
-        animate();
-    </script>
-</body>
-</html>
+                        if (currentStage.weapon === "spread") {
+                            // Aura Farmer fires a 3-way spread pattern
+                            alienLasers.push({ x: centerX, y: bottomY, vx: -2, width: 6, height: 12 });
+                            alienLasers.push({ x: centerX, y: bottomY, vx: 0, width: 6, height: 12 });
+                            alienLasers.push({ x: centerX, y: bottomY, vx: 2, width: 6, height: 12 });
+                        } else if (currentStage.weapon === "tracking") {
+                            // Jassy targets player center coordinates directly
+                            const targetDX = (player.x + player.width / 2) - centerX;
+                            const targetDY = player.y - bottomY;
+                            const distance = Math.sqrt(targetDX * targetDX + targetDY * targetDY);
+                            const speedMod = 4; // Velocity factor
+                            const calculatedVX = (targetDX / distance) * speedMod;
+
