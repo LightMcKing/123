@@ -25,14 +25,14 @@
             margin: 8px 0 2px 0;
             text-shadow: 0 0 8px #ff00ff;
             letter-spacing: 1px;
-            font-size: 15px;
+            font-size: 16px;
             text-align: center;
         }
         #ui-bar {
             width: 92vw;
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
+            font-size: 13px;
             margin-bottom: 5px;
             color: #00ffff;
         }
@@ -132,19 +132,19 @@
         let alienLasers = [];
         const laserSpeed = 8;
 
-        // FIXED: Replaced arrays with independent text strings to stop rendering engine crashes
         const stages = [
-            { name: "Mass (Weak)", txt1: "mass the", txt2: "gay gooner", color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1.0, weapon: "normal" },
-            { name: "George (Medium)", txt1: "George the", txt2: "secret gooner", color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
-            { name: "West (Above Medium)", txt1: "West the", txt2: "og gooner", color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
-            { name: "Phantom (Strong)", txt1: "phantom the", txt2: "serial gooner", color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
-            { name: "Aura Farmer (Boss)", txt1: "Aura farmer the", txt2: "ultimate gooner", color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
+            { name: "Mass (Weak)", txt1: "mass the", txt2: "gay gooner", color: "#66ccff", hp: 1, rows: 2, cols: 5, speed: 1.0, weapon: "normal" },
+            { name: "George (Medium)", txt1: "George the", txt2: "secret gooner", color: "#ffcc00", hp: 2, rows: 2, cols: 5, speed: 1.2, weapon: "normal" },
+            { name: "West (Above Medium)", txt1: "West the", txt2: "og gooner", color: "#ff9933", hp: 3, rows: 3, cols: 5, speed: 1.4, weapon: "normal" },
+            { name: "Phantom (Strong)", txt1: "phantom the", txt2: "serial gooner", color: "#ff3333", hp: 4, rows: 3, cols: 5, speed: 1.6, weapon: "normal" },
+            { name: "Aura Farmer (Boss)", txt1: "Aura farmer the", txt2: "ultimate gooner", color: "#9933ff", hp: 12, rows: 1, cols: 2, speed: 1.8, weapon: "spread" },
             { name: "Jassy (Finale Boss)", txt1: "Jassy the", txt2: "legendary gooner", color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.3, weapon: "tracking" }
         ];
 
-        let alienWidth = 70;
-        let alienHeight = 45;
-        const alienPadding = 15;
+        // Increased default block sizing drastically so the fonts display clearly
+        let alienWidth = 115;
+        let alienHeight = 65;
+        const alienPadding = 20;
         let alienOffsetTop = 50;
         let alienOffsetLeft = 40;
 
@@ -156,7 +156,6 @@
 
         const inputs = { left: false, right: false };
 
-        // Event hooks
         document.addEventListener("keydown", e => {
             const k = e.key.toLowerCase();
             if (k === "arrowleft" || k === "a") inputs.left = true;
@@ -201,18 +200,19 @@
             playerLasers = [];
             alienLasers = [];
 
+            // Massive grid dimension sets for boss fights
             if (currentStage.weapon === "tracking") {
-                alienWidth = 240;
-                alienHeight = 70;
-                alienOffsetLeft = canvas.width / 2 - 120;
+                alienWidth = 320;
+                alienHeight = 110;
+                alienOffsetLeft = canvas.width / 2 - 160;
             } else if (currentStage.weapon === "spread") {
-                alienWidth = 140;
-                alienHeight = 55;
+                alienWidth = 220;
+                alienHeight = 90;
                 alienOffsetLeft = 60;
             } else {
-                alienWidth = 72;
-                alienHeight = 45;
-                alienOffsetLeft = 40;
+                alienWidth = 115;
+                alienHeight = 65;
+                alienOffsetLeft = 30;
             }
 
             aliens = [];
