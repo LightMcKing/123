@@ -21,13 +21,15 @@
             margin: 0 0 5px 0;
             text-shadow: 0 0 8px #ff00ff;
             letter-spacing: 2px;
-            font-size: 28px;
+            font-size: 24px;
+            text-align: center;
         }
         #ui-bar {
-            width: 700px;
+            width: 90vw;
+            max-width: 700px;
             display: flex;
             justify-content: space-between;
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 10px;
             color: #00ffff;
         }
@@ -35,10 +37,12 @@
             background-color: #000;
             border: 3px solid #444;
             box-shadow: 0 0 25px rgba(255, 0, 255, 0.15);
+            max-width: 95vw;
+            max-height: 70vh;
         }
         .controls {
             margin-top: 10px;
-            font-size: 13px;
+            font-size: 12px;
             color: #777;
             text-align: center;
             line-height: 1.5;
@@ -105,7 +109,7 @@
         let alienDirection = 1;
         let currentAlienSpeed = 1;
         const alienDropDistance = 15;
-        let alienShootChance = 0.02; // Elevated baseline shoot chance
+        let alienShootChance = 0.02; 
 
         // Inputs
         const keys = {};
@@ -116,9 +120,7 @@
         let canShoot = true;
         document.addEventListener("keydown", e => {
             if (e.key === " " && canShoot && !gameOver && !victory) {
-                // Main center laser
                 playerLasers.push({ x: player.x + player.width / 2 - 2, y: player.y, vx: 0, width: 4, height: 12 });
-                // Right side laser
                 playerLasers.push({ x: player.x + player.width - 6, y: player.y, vx: 0, width: 4, height: 12 });
                 canShoot = false;
             }
@@ -140,7 +142,6 @@
             playerLasers = [];
             alienLasers = [];
 
-            // Scale Boss sizing for single-entity epic matches
             if (currentStage.weapon === "tracking") {
                 alienWidth = 180;
                 alienHeight = 70;
@@ -189,29 +190,33 @@
             }
 
             // Move Player Lasers
-            playerLasers.forEach((laser, index) => {
-                laser.y -= laserSpeed;
-                if (laser.y < 0) playerLasers.splice(index, 1);
-            });
+            for (let i = playerLasers.length - 1; i >= 0; i--) {
+                playerLasers[i].y -= laserSpeed;
+                if (playerLasers[i].y < 0) {
+                    playerLasers.splice(i, 1);
+                }
+            }
 
             // Move Alien Lasers
-            alienLasers.forEach((laser, index) => {
+            for (let i = alienLasers.length - 1; i >= 0; i--) {
+                let laser = alienLasers[i];
                 laser.y += laserSpeed * 0.6;
                 if (laser.vx) {
-                    laser.x += laservx;
+                    laser.x += laser.vx; // FIXED: Changed laservx to laser.vx
                 }
+                
                 if (laser.y > canvas.height || laser.x < 0 || laser.x > canvas.width) {
-                    alienLasers.splice(index, 1);
-                    return;
+                    alienLasers.splice(i, 1);
+                    continue;
                 }
 
                 if (rectCollision(laser, player)) {
-                    alienLasers.splice(index, 1);
+                    alienLasers.splice(i, 1);
                     lives--;
                     livesElement.innerText = lives;
                     if (lives <= 0) gameOver = true;
                 }
-            });
+            }
 
             // Alien Grid Calculations
             let shiftDown = false;
@@ -233,21 +238,20 @@
                         gameOver = true;
                     }
 
-                    // Dynamic Alien Shooters Selection
+                    // Alien Firing Logic
                     if (Math.random() < alienShootChance / totalAliensAlive) {
                         const centerX = alien.x + alienWidth / 2;
                         const bottomY = alien.y + alienHeight;
 
                         if (currentStage.weapon === "spread") {
-                            // Aura Farmer fires a 3-way spread pattern
                             alienLasers.push({ x: centerX, y: bottomY, vx: -2, width: 6, height: 12 });
                             alienLasers.push({ x: centerX, y: bottomY, vx: 0, width: 6, height: 12 });
                             alienLasers.push({ x: centerX, y: bottomY, vx: 2, width: 6, height: 12 });
                         } else if (currentStage.weapon === "tracking") {
-                            // Jassy targets player center coordinates directly
                             const targetDX = (player.x + player.width / 2) - centerX;
                             const targetDY = player.y - bottomY;
                             const distance = Math.sqrt(targetDX * targetDX + targetDY * targetDY);
-                            const speedMod = 4; // Velocity factor
+                            const speedMod = 4; 
                             const calculatedVX = (targetDX / distance) * speedMod;
 
+                            alienLasers.push({ x: centerX, y: bottomY, vx: calculatedVX, width: 8, height: 16 });
