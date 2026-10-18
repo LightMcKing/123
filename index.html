@@ -15,23 +15,24 @@
             justify-content: flex-start;
             height: 100vh;
             margin: 0;
+            padding: 0;
             overflow: hidden;
             touch-action: none;
             -webkit-user-select: none;
             user-select: none;
         }
         h1 {
-            margin: 10px 0 5px 0;
+            margin: 8px 0 2px 0;
             text-shadow: 0 0 8px #ff00ff;
             letter-spacing: 1px;
-            font-size: 16px;
+            font-size: 15px;
             text-align: center;
         }
         #ui-bar {
             width: 92vw;
             display: flex;
             justify-content: space-between;
-            font-size: 13px;
+            font-size: 12px;
             margin-bottom: 5px;
             color: #00ffff;
         }
@@ -40,7 +41,7 @@
             border: 2px solid #444;
             box-shadow: 0 0 15px rgba(255, 0, 255, 0.15);
             max-width: 95vw;
-            max-height: 60vh;
+            max-height: 52vh;
             display: block;
         }
         #controls-container {
@@ -49,11 +50,11 @@
             justify-content: space-between;
             align-items: center;
             margin-top: auto;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         .d-pad {
             display: flex;
-            gap: 12px;
+            gap: 15px;
         }
         .btn {
             background: rgba(255, 255, 255, 0.12);
@@ -71,12 +72,12 @@
             border-color: #ff00ff;
         }
         .move-btn {
-            width: 65px;
-            height: 65px;
+            width: 70px;
+            height: 70px;
         }
         .fire-btn {
             width: 110px;
-            height: 65px;
+            height: 70px;
             background: rgba(0, 255, 255, 0.18);
             border-color: #00ffff;
             font-size: 18px;
@@ -91,7 +92,7 @@
     <h1>SPACE INVADERS: THE GOONER EDITION</h1>
     <div id="ui-bar">
         <div>SCORE: <span id="score">0</span></div>
-        <div>STAGE: <span id="stage-name">Loading...</span></div>
+        <div>STAGE: <span id="stage-name">Initializing...</span></div>
         <div>LIVES: <span id="lives">3</span></div>
     </div>
     
@@ -131,14 +132,13 @@
         let alienLasers = [];
         const laserSpeed = 8;
 
-        // Custom array splitting structure for clean cube rendering boundaries
         const stages = [
-            { name: "Mass (Weak)", alienWords: ["mass the", "gay gooner"], color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1.0, weapon: "normal" },
-            { name: "George (Medium)", alienWords: ["George the", "secret gooner"], color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
-            { name: "West (Above Medium)", alienWords: ["West the", "og gooner"], color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
-            { name: "Phantom (Strong)", alienWords: ["phantom the", "serial gooner"], color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
-            { name: "Aura Farmer (Boss)", alienWords: ["Aura farmer the", "ultimate gooner"], color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
-            { name: "Jassy (Finale Boss)", alienWords: ["Jassy the", "legendary gooner"], color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.3, weapon: "tracking" }
+            { name: "Mass (Weak)", line1: "mass the", line2: "gay gooner", color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1.0, weapon: "normal" },
+            { name: "George (Medium)", line1: "George the", line2: "secret gooner", color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
+            { name: "West (Above Medium)", line1: "West the", line2: "og gooner", color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
+            { name: "Phantom (Strong)", line1: "phantom the", line2: "serial gooner", color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
+            { name: "Aura Farmer (Boss)", line1: "Aura farmer the", line2: "ultimate gooner", color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
+            { name: "Jassy (Finale Boss)", line1: "Jassy the", line2: "legendary gooner", color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.3, weapon: "tracking" }
         ];
 
         let alienWidth = 70;
@@ -155,6 +155,7 @@
 
         const inputs = { left: false, right: false };
 
+        // Keyboard support backup
         document.addEventListener("keydown", e => {
             const k = e.key.toLowerCase();
             if (k === "arrowleft" || k === "a") inputs.left = true;
@@ -167,15 +168,16 @@
             if (k === "arrowright" || k === "d") inputs.right = false;
         });
 
+        // Touch Control Listeners
         const leftBtn = document.getElementById("leftBtn");
         const rightBtn = document.getElementById("rightBtn");
         const fireBtn = document.getElementById("fireBtn");
 
-        leftBtn.addEventListener("touchstart", (e) => { e.preventDefault(); inputs.left = true; });
-        leftBtn.addEventListener("touchend", (e) => { e.preventDefault(); inputs.left = false; });
-        rightBtn.addEventListener("touchstart", (e) => { e.preventDefault(); inputs.right = true; });
-        rightBtn.addEventListener("touchend", (e) => { e.preventDefault(); inputs.right = false; });
-        fireBtn.addEventListener("touchstart", (e) => { e.preventDefault(); executeFire(); });
+        leftBtn.addEventListener("touchstart", (e) => { e.preventDefault(); inputs.left = true; }, { passive: false });
+        leftBtn.addEventListener("touchend", (e) => { e.preventDefault(); inputs.left = false; }, { passive: false });
+        rightBtn.addEventListener("touchstart", (e) => { e.preventDefault(); inputs.right = true; }, { passive: false });
+        rightBtn.addEventListener("touchend", (e) => { e.preventDefault(); inputs.right = false; }, { passive: false });
+        fireBtn.addEventListener("touchstart", (e) => { e.preventDefault(); executeFire(); }, { passive: false });
 
         function executeFire() {
             if (!gameOver && !victory) {
@@ -260,9 +262,7 @@
             for (let i = alienLasers.length - 1; i >= 0; i--) {
                 let laser = alienLasers[i];
                 laser.y += laserSpeed * 0.6;
-                if (laser.vx) {
-                    laser.x += laser.vx; // FIXED: Safely references object scoped vx property 
-                }
+                if (laser.vx) laser.x += laser.vx;
                 
                 if (laser.y > canvas.height || laser.x < 0 || laser.x > canvas.width) {
                     alienLasers.splice(i, 1);
@@ -270,4 +270,3 @@
                 }
 
                 if (rectCollision(laser, player)) {
-                    alienLasers.splice(i, 1);
