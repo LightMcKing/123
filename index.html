@@ -16,7 +16,7 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
-            touch-action: none; /* Prevents mobile browser zooming or panning while playing */
+            touch-action: none;
             -webkit-user-select: none;
             user-select: none;
         }
@@ -24,14 +24,14 @@
             margin: 10px 0 5px 0;
             text-shadow: 0 0 8px #ff00ff;
             letter-spacing: 1px;
-            font-size: 18px;
+            font-size: 16px;
             text-align: center;
         }
         #ui-bar {
-            width: 95vw;
+            width: 92vw;
             display: flex;
             justify-content: space-between;
-            font-size: 14px;
+            font-size: 13px;
             margin-bottom: 5px;
             color: #00ffff;
         }
@@ -40,34 +40,31 @@
             border: 2px solid #444;
             box-shadow: 0 0 15px rgba(255, 0, 255, 0.15);
             max-width: 95vw;
-            max-height: 55vh;
+            max-height: 60vh;
             display: block;
         }
-        /* Mobile Touch Controls Layout */
         #controls-container {
-            width: 95vw;
+            width: 92vw;
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: auto;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         .d-pad {
             display: flex;
-            gap: 10px;
+            gap: 12px;
         }
         .btn {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.12);
             border: 2px solid #fff;
             border-radius: 12px;
             color: #fff;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            user-select: none;
-            -webkit-user-select: none;
         }
         .btn:active {
             background: rgba(255, 0, 255, 0.4);
@@ -78,9 +75,9 @@
             height: 65px;
         }
         .fire-btn {
-            width: 120px;
+            width: 110px;
             height: 65px;
-            background: rgba(0, 255, 255, 0.2);
+            background: rgba(0, 255, 255, 0.18);
             border-color: #00ffff;
             font-size: 18px;
         }
@@ -100,7 +97,6 @@
     
     <canvas id="gameCanvas" width="750" height="550"></canvas>
 
-    <!-- Virtual Controls for Mobile Devices -->
     <div id="controls-container">
         <div class="d-pad">
             <div class="btn move-btn" id="leftBtn">◀</div>
@@ -116,36 +112,32 @@
         const livesElement = document.getElementById("lives");
         const stageNameElement = document.getElementById("stage-name");
 
-        // Game State
         let score = 0;
         let lives = 3;
         let gameOver = false;
         let victory = false;
         let currentStageIndex = 0;
 
-        // Player Ship Configuration
         const player = {
-            x: canvas.width / 2 - 25,
-            y: canvas.height - 40,
+            x: 350,
+            y: 500,
             width: 50,
             height: 18,
             speed: 7,
             color: "#00ff00"
         };
 
-        // Projectiles
         let playerLasers = [];
         let alienLasers = [];
         const laserSpeed = 8;
 
-        // Stage Configuration mapping names and settings
         const stages = [
-            { name: "Mass (Weak)", alienName: "mass the gay gooner", color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1, weapon: "normal" },
+            { name: "Mass (Weak)", alienName: "mass the gay gooner", color: "#66ccff", hp: 1, rows: 3, cols: 8, speed: 1.0, weapon: "normal" },
             { name: "George (Medium)", alienName: "George the secret gooner", color: "#ffcc00", hp: 2, rows: 3, cols: 8, speed: 1.2, weapon: "normal" },
             { name: "West (Above Medium)", alienName: "West the og gooner", color: "#ff9933", hp: 3, rows: 4, cols: 8, speed: 1.4, weapon: "normal" },
             { name: "Phantom (Strong)", alienName: "phantom the serial gooner", color: "#ff3333", hp: 4, rows: 4, cols: 8, speed: 1.6, weapon: "normal" },
             { name: "Aura Farmer (Boss)", alienName: "Aura farmer the ultimate gooner", color: "#9933ff", hp: 12, rows: 1, cols: 3, speed: 1.8, weapon: "spread" },
-            { name: "Jassy (Finale Boss)", alienName: "Jassy the legendary gooner", color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.5, weapon: "tracking" }
+            { name: "Jassy (Finale Boss)", alienName: "Jassy the legendary gooner", color: "#ff00ff", hp: 35, rows: 1, cols: 1, speed: 2.3, weapon: "tracking" }
         ];
 
         let alienWidth = 70;
@@ -160,10 +152,8 @@
         const alienDropDistance = 15;
         let alienShootChance = 0.02; 
 
-        // Input tracking states (Combines Keyboards + Touch Controls)
         const inputs = { left: false, right: false };
 
-        // Desktop Keyboard Listeners
         document.addEventListener("keydown", e => {
             const k = e.key.toLowerCase();
             if (k === "arrowleft" || k === "a") inputs.left = true;
@@ -176,7 +166,6 @@
             if (k === "arrowright" || k === "d") inputs.right = false;
         });
 
-        // Mobile On-Screen Button Listeners
         const leftBtn = document.getElementById("leftBtn");
         const rightBtn = document.getElementById("rightBtn");
         const fireBtn = document.getElementById("fireBtn");
@@ -185,20 +174,13 @@
         leftBtn.addEventListener("touchend", (e) => { e.preventDefault(); inputs.left = false; });
         rightBtn.addEventListener("touchstart", (e) => { e.preventDefault(); inputs.right = true; });
         rightBtn.addEventListener("touchend", (e) => { e.preventDefault(); inputs.right = false; });
-        
-        fireBtn.addEventListener("touchstart", (e) => { 
-            e.preventDefault(); 
-            executeFire(); 
-        });
+        fireBtn.addEventListener("touchstart", (e) => { e.preventDefault(); executeFire(); });
 
         function executeFire() {
             if (!gameOver && !victory) {
-                // Main center laser
                 playerLasers.push({ x: player.x + player.width / 2 - 2, y: player.y, vx: 0, width: 4, height: 12 });
-                // Right wing laser
                 playerLasers.push({ x: player.x + player.width - 6, y: player.y, vx: 0, width: 4, height: 12 });
-            } else if (gameOver || victory) {
-                // Tap fire button to reset game if finished
+            } else {
                 resetGame();
             }
         }
@@ -252,6 +234,7 @@
             victory = false;
             scoreElement.innerText = score;
             livesElement.innerText = lives;
+            player.x = canvas.width / 2 - 25;
             initStage(0);
         }
 
@@ -265,12 +248,29 @@
         function update() {
             if (gameOver || victory) return;
 
-            // Player Ship Movement Physics
-            if (inputs.left && player.x > 0) {
-                player.x -= player.speed;
-            }
-            if (inputs.right && player.x < canvas.width - player.width) {
-                player.x += player.speed;
+            if (inputs.left && player.x > 0) player.x -= player.speed;
+            if (inputs.right && player.x < canvas.width - player.width) player.x += player.speed;
+
+            for (let i = playerLasers.length - 1; i >= 0; i--) {
+                playerLasers[i].y -= laserSpeed;
+                if (playerLasers[i].y < 0) playerLasers.splice(i, 1);
             }
 
-            // Move Player Lasers
+            for (let i = alienLasers.length - 1; i >= 0; i--) {
+                let laser = alienLasers[i];
+                laser.y += laserSpeed * 0.6;
+                if (laser.vx) laser.x += laser.vx;
+                
+                if (laser.y > canvas.height || laser.x < 0 || laser.x > canvas.width) {
+                    alienLasers.splice(i, 1);
+                    continue;
+                }
+
+                if (rectCollision(laser, player)) {
+                    alienLasers.splice(i, 1);
+                    lives--;
+                    livesElement.innerText = lives;
+                    if (lives <= 0) gameOver = true;
+                }
+            }
+
